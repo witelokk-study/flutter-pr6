@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import '../models/meal.dart';
-import '../state/meals_container.dart';
 import '../widgets/meal_list_view.dart';
-import 'meal_form_screen.dart';
 
-class MealsListScreen extends StatefulWidget {
-  const MealsListScreen({super.key});
+class MealsListScreen extends StatelessWidget {
+  final List<Meal> meals;
+  final DateTime selectedDate;
+  final void Function(DateTime newDate) onDateChange;
+  final VoidCallback onAdd;
+  final void Function(Meal meal) onEdit;
+  final void Function(String id) onDelete;
 
-  @override
-  State<MealsListScreen> createState() => _MealsListScreenState();
-}
-
-class _MealsListScreenState extends State<MealsListScreen> {
-  DateTime selectedDate = DateTime.now();
+  const MealsListScreen({
+    super.key,
+    required this.meals,
+    required this.selectedDate,
+    required this.onDateChange,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final mealsContainer = MealsContainer.of(context);
-
-    final mealsForDay = mealsContainer.getMealsForDate(selectedDate);
-    final totalCalories = mealsForDay.fold<double>(
-      0,
-      (sum, meal) => sum + (meal.calories ?? 0),
-    );
+    final totalCalories =
+        meals.fold<double>(0, (sum, meal) => sum + (meal.calories ?? 0));
 
     return Scaffold(
       appBar: AppBar(
@@ -31,7 +32,6 @@ class _MealsListScreenState extends State<MealsListScreen> {
       ),
       body: Column(
         children: [
-          // Отображение выбранной даты
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -39,83 +39,48 @@ class _MealsListScreenState extends State<MealsListScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      selectedDate = selectedDate.subtract(const Duration(days: 1));
-                    });
-                  },
+                  onPressed: () => onDateChange(
+                    selectedDate.subtract(const Duration(days: 1)),
+                  ),
                 ),
                 Text(
                   _formatDate(selectedDate),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
-                  onPressed: () {
-                    setState(() {
-                      selectedDate = selectedDate.add(const Duration(days: 1));
-                    });
-                  },
+                  onPressed: () => onDateChange(
+                    selectedDate.add(const Duration(days: 1)),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Список приёмов пищи
           Expanded(
-            child: mealsForDay.isEmpty
-                ? const Center(child: Text('Записей пока нет'))
+            child: meals.isEmpty
+                ? const Center(child: Text('Записей пока нет'))
                 : MealListView(
-                    meals: mealsForDay,
-                    onDelete: (meal) {
-                      setState(() {
-                        mealsContainer.deleteMeal(meal.id);
-                      });
-                    },
-                    onEdit: (meal) async {
-                      final updatedMeal = await Navigator.push<Meal>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MealFormScreen(meal: meal),
-                        ),
-                      );
-                      if (updatedMeal != null) {
-                        setState(() {
-                          mealsContainer.updateMeal(updatedMeal);
-                        });
-                      }
-                    },
+                    meals: meals,
+                    onEdit: onEdit,
+                    onDelete: (meal) => onDelete(meal.id),
                   ),
           ),
 
-          // Сводка по калорийности
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'Всего калорий: ${totalCalories.toStringAsFixed(0)}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              'Всего калорий: ${totalCalories.toStringAsFixed(0)}',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],
       ),
 
-      // Кнопка добавления
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newMeal = await Navigator.push<Meal>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MealFormScreen(
-                initialDate: selectedDate,
-              ),
-            ),
-          );
-          if (newMeal != null) {
-            setState(() {
-              mealsContainer.addMeal(newMeal);
-            });
-          }
-        },
+        onPressed: onAdd,
         child: const Icon(Icons.add),
       ),
     );

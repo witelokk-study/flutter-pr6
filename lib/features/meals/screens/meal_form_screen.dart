@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/meal.dart';
 import 'package:uuid/uuid.dart';
+import '../models/meal.dart';
 
 class MealFormScreen extends StatefulWidget {
   final Meal? meal;
   final DateTime? initialDate;
+  final void Function(Meal meal) onSave;
+  final VoidCallback onCancel;
 
   const MealFormScreen({
     super.key,
     this.meal,
     this.initialDate,
+    required this.onSave,
+    required this.onCancel,
   });
 
   @override
@@ -35,9 +39,8 @@ class _MealFormScreenState extends State<MealFormScreen> {
     _name = meal?.name ?? '';
     _category = meal?.category ?? 'Завтрак';
     _date = meal?.date ?? widget.initialDate ?? DateTime.now();
-    _time = meal != null
-        ? TimeOfDay.fromDateTime(meal.time)
-        : TimeOfDay.now();
+    _time =
+        meal != null ? TimeOfDay.fromDateTime(meal.time) : TimeOfDay.now();
     _calories = meal?.calories;
   }
 
@@ -45,7 +48,8 @@ class _MealFormScreenState extends State<MealFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.meal == null ? 'Добавить приём пищи' : 'Редактировать'),
+        title:
+            Text(widget.meal == null ? 'Добавить приём пищи' : 'Редактировать'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -56,12 +60,8 @@ class _MealFormScreenState extends State<MealFormScreen> {
               TextFormField(
                 initialValue: _name,
                 decoration: const InputDecoration(labelText: 'Название блюда'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Введите название';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    (value == null || value.isEmpty) ? 'Введите название' : null,
                 onSaved: (value) => _name = value!,
               ),
               const SizedBox(height: 16),
@@ -74,16 +74,15 @@ class _MealFormScreenState extends State<MealFormScreen> {
                           child: Text(cat),
                         ))
                     .toList(),
-                onChanged: (value) => setState(() {
-                  _category = value!;
-                }),
+                onChanged: (value) => setState(() => _category = value!),
                 decoration: const InputDecoration(labelText: 'Категория'),
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 initialValue: _calories?.toString() ?? '',
-                decoration: const InputDecoration(labelText: 'Калорийность (ккал)'),
+                decoration:
+                    const InputDecoration(labelText: 'Калорийность (ккал)'),
                 keyboardType: TextInputType.number,
                 onSaved: (value) {
                   if (value != null && value.isNotEmpty) {
@@ -97,20 +96,14 @@ class _MealFormScreenState extends State<MealFormScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Дата: ${_date.day}.${_date.month}.${_date.year}'),
-                  TextButton(
-                    onPressed: _pickDate,
-                    child: const Text('Изменить'),
-                  ),
+                  TextButton(onPressed: _pickDate, child: const Text('Изменить')),
                 ],
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Время: ${_time.format(context)}'),
-                  TextButton(
-                    onPressed: _pickTime,
-                    child: const Text('Изменить'),
-                  ),
+                  TextButton(onPressed: _pickTime, child: const Text('Изменить')),
                 ],
               ),
 
@@ -118,6 +111,10 @@ class _MealFormScreenState extends State<MealFormScreen> {
               ElevatedButton(
                 onPressed: _saveMeal,
                 child: const Text('Сохранить'),
+              ),
+              TextButton(
+                onPressed: widget.onCancel,
+                child: const Text('Отмена'),
               ),
             ],
           ),
@@ -137,33 +134,23 @@ class _MealFormScreenState extends State<MealFormScreen> {
   }
 
   void _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _time,
-    );
+    final picked = await showTimePicker(context: context, initialTime: _time);
     if (picked != null) setState(() => _time = picked);
   }
 
   void _saveMeal() {
-    if (_formKey.currentState?.validate() ?? false) {
-      _formKey.currentState?.save();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    _formKey.currentState?.save();
 
-      final meal = Meal(
-        id: widget.meal?.id ?? _uuid.v4(),
-        name: _name,
-        category: _category,
-        date: _date,
-        time: DateTime(
-          _date.year,
-          _date.month,
-          _date.day,
-          _time.hour,
-          _time.minute,
-        ),
-        calories: _calories,
-      );
+    final meal = Meal(
+      id: widget.meal?.id ?? _uuid.v4(),
+      name: _name,
+      category: _category,
+      date: _date,
+      time: DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute),
+      calories: _calories,
+    );
 
-      Navigator.pop(context, meal);
-    }
+    widget.onSave(meal);
   }
 }

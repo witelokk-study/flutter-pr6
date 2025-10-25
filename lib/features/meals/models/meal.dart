@@ -1,11 +1,11 @@
 class Meal {
   final String id;
   String name;
-  String category; // "Завтрак", "Обед", "Ужин", "Перекус"
+  String category; 
   DateTime date;
   DateTime time;
-  double? quantity; // по желанию, в граммах
-  double? calories; // по желанию, калории
+  double? quantity; 
+  double? calories;
 
   Meal({
     required this.id,
@@ -17,3 +17,4 @@ class Meal {
     this.calories,
   });
 }
+
