@@ -1,4 +1,4 @@
-package com.example.pr5
+package com.example.pr6
 
 import io.flutter.embedding.android.FlutterActivity
 
